@@ -27,14 +27,14 @@ set(VALIDATION_CUDA_SOURCES
     validate.cpp
 )
 
-if(VALIDATION_DATA_DIR)
-    add_definitions("-DDATADIR=\"${VALIDATION_DATA_DIR}\"")
+if(NMC_VALIDATION_DATA_DIR)
+    add_definitions("-DDATADIR=\"${NMC_VALIDATION_DATA_DIR}\"")
 endif()
 
 add_executable(validate.exe ${VALIDATION_SOURCES})
 set(TARGETS validate.exe)
 
-if(WITH_CUDA)
+if(NMC_WITH_CUDA)
     cuda_add_executable(validate_cuda.exe ${VALIDATION_CUDA_SOURCES})
     list(APPEND TARGETS validate_cuda.exe)
     target_link_libraries(validate_cuda.exe LINK_PUBLIC gpu)
@@ -57,7 +57,7 @@ foreach(target ${TARGETS})
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
     )
 
-    if(BUILD_VALIDATION_DATA)
+    if(NMC_BUILD_VALIDATION_DATA)
         add_dependencies(${target} validation_data)
     endif()
 endforeach()

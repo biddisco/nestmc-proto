@@ -11,7 +11,7 @@ set(MINIAPP_SOURCES_CUDA
     miniapp_recipes.cpp
 )
 
-if(WITH_CUDA)
+if(NMC_WITH_CUDA)
     cuda_add_executable(miniapp.exe ${MINIAPP_SOURCES_CUDA} ${HEADERS})
     target_link_libraries(miniapp.exe LINK_PUBLIC gpu)
 else()

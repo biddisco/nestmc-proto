@@ -20,7 +20,7 @@ build_modules(
     TARGET build_all_mods
 )
 
-if(WITH_CUDA)
+if(NMC_WITH_CUDA)
     set(mech_dir "${CMAKE_CURRENT_SOURCE_DIR}/gpu")
     file(MAKE_DIRECTORY "${mech_dir}")
     build_modules(

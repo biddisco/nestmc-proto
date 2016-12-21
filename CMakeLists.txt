@@ -19,16 +19,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "YES")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# enable assertions?
-set(WITH_ASSERTIONS OFF CACHE BOOL "enable EXPECTS() assertions in code")
-if(WITH_ASSERTIONS)
-    add_definitions("-DWITH_ASSERTIONS")
+#----------------------------------------------------------
+# Option to enable assertions
+#----------------------------------------------------------
+option(NMC_WITH_ASSERTIONS "enable EXPECTS() assertions in code" OFF)
+if(NMC_WITH_ASSERTIONS)
+    add_definitions("-DNMC_HAVE_ASSERTIONS")
 endif()
 
-# enable traces?
-set(WITH_TRACE OFF CACHE BOOL "enable TRACE() macros in code")
-if(WITH_TRACE)
-    add_definitions("-DWITH_TRACE")
+#----------------------------------------------------------
+# Option to enable traces
+#----------------------------------------------------------
+option(NMC_WITH_TRACE "enable TRACE() macros in code" OFF)
+if(NMC_WITH_TRACE)
+    add_definitions("-DNMC_HAVE_TRACE")
 endif()
 
 #----------------------------------------------------------
@@ -39,31 +43,41 @@ option(NMC_AUTO_RUN_MODCC_ON_CHANGES
 
 # list of libraries to be linked against targets
 set(EXTERNAL_LIBRARIES "")
+set(EXTERNAL_INCLUDES "")
 
-#threading model selection
-set(THREADING_MODEL "serial" CACHE STRING "set the threading model, one of serial/tbb/omp")
-if(THREADING_MODEL MATCHES "tbb")
+#----------------------------------------------------------
+# Threading model selection
+#----------------------------------------------------------
+set(NMC_THREADING_MODEL "serial" CACHE STRING "set the threading model, one of serial/tbb/omp")
+set_property(CACHE NMC_THREADING_MODEL PROPERTY STRINGS serial tbb omp)
+
+if(NMC_THREADING_MODEL MATCHES "tbb")
     # TBB support
     find_package(TBB REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TBB_DEFINITIONS}")
-    add_definitions(-DWITH_TBB)
+    add_definitions(-DNMC_HAVE_TBB)
+    set(NMC_HAVE_TBB TRUE)
     list(APPEND EXTERNAL_LIBRARIES ${TBB_LIBRARIES})
+    list(APPEND EXTERNAL_INCLUDES ${TBB_INCLUDE_DIRS})
 
-elseif(THREADING_MODEL MATCHES "omp")
+elseif(NMC_THREADING_MODEL MATCHES "omp")
     # OpenMP support
     find_package(OpenMP REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    add_definitions(-DWITH_OMP)
+    add_definitions(-DNMC_HAVE_OMP)
+    set(NMC_HAVE_OMP TRUE)
 
-elseif(THREADING_MODEL MATCHES "serial")
+elseif(NMC_THREADING_MODEL MATCHES "serial")
     #setup previously done
 
 else()
-    message( FATAL_ERROR "-- Threading model '${THREADING_MODEL}' not supported, use one of serial/tbb/omp")
+    message( FATAL_ERROR "-- Threading model '${NMC_THREADING_MODEL}' not supported, use one of serial/tbb/omp")
 
 endif()
 
+#----------------------------------------------------------
 # libunwind for pretty printing stack traces
+#----------------------------------------------------------
 find_package(Unwind)
 if(UNWIND_FOUND)
     add_definitions(-DWITH_UNWIND)
@@ -71,9 +85,11 @@ if(UNWIND_FOUND)
     list(APPEND EXTERNAL_LIBRARIES ${UNWIND_LIBRARIES})
 endif()
 
+#----------------------------------------------------------
 # CUDA support
-set(WITH_CUDA OFF CACHE BOOL "use CUDA for GPU offload" )
-if(WITH_CUDA)
+#----------------------------------------------------------
+option(NMC_WITH_CUDA "use CUDA for GPU offload" OFF)
+if(NMC_WITH_CUDA)
     find_package(CUDA REQUIRED)
 
     # Turn off annoying and incorrect warnings generated in the JSON file.
@@ -81,15 +97,15 @@ if(WITH_CUDA)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-Xcudafe \"--diag_suppress=not_used_in_template_function_params\";-Xcudafe \"--diag_suppress=cast_to_qualified_type\")
 
     # set the CUDA target specfic flags
-    # code regions protected by WITH_CUDA should only be available to the CUDA
-    # compiler, which regions protected by WITH_GPU are visible to both host
+    # code regions protected by NMC_HAVE_CUDA should only be available to the CUDA
+    # compiler, which regions protected by NMC_HAVE_GPU are visible to both host
     # and device compiler when targetting GPU.
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-DWITH_CUDA)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-DWITH_GPU)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-DNMC_HAVE_CUDA)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-DNMC_HAVE_GPU)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-arch=sm_35)
     #set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-arch=sm_60)
 
-    add_definitions(-DWITH_GPU)
+    add_definitions(-DNMC_HAVE_GPU)
     include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})
     list(APPEND EXTERNAL_LIBRARIES ${CUDA_LIBRARIES})
 endif()
@@ -113,9 +129,9 @@ if(WITH_MPI)
 endif()
 
 # Internal profiler support
-set(WITH_PROFILING OFF CACHE BOOL "use built-in profiling of miniapp" )
-if(WITH_PROFILING)
-    add_definitions(-DWITH_PROFILING)
+option(NMC_WITH_PROFILING "use built-in profiling of miniapp" OFF)
+if(NMC_WITH_PROFILING)
+    add_definitions(-DNMC_HAVE_PROFILING)
 endif()
 
 # Cray systems
@@ -153,18 +169,18 @@ endif()
 # Validation data generation
 
 # destination directory for generated data
-set(VALIDATION_DATA_DIR "${PROJECT_SOURCE_DIR}/validation/data" CACHE PATH "location of generated validation data")
+set(NMC_VALIDATION_DATA_DIR "${PROJECT_SOURCE_DIR}/validation/data" CACHE PATH "location of generated validation data")
 
 # Whether to build validation data at all
-set(BUILD_VALIDATION_DATA ON CACHE BOOL "generate validation data")
+set(NMC_BUILD_VALIDATION_DATA ON CACHE BOOL "generate validation data")
 
 # Whether to attempt to use julia to build validation data
 find_program(JULIA_BIN julia)
 if(JULIA_BIN STREQUAL "JULIA_BIN-NOTFOUND")
     message(STATUS "julia not found; will not automatically build validation data sets from julia scripts")
-    set(BUILD_JULIA_VALIDATION_DATA FALSE)
+    set(NMC_BUILD_JULIA_VALIDATION_DATA FALSE)
 else()
-    set(BUILD_JULIA_VALIDATION_DATA TRUE)
+    set(NMC_BUILD_JULIA_VALIDATION_DATA TRUE)
 endif()
 
 # Whether to attempt to use nrniv to build validation data
@@ -172,23 +188,30 @@ endif()
 find_program(NRNIV_BIN nrniv)
 if(NRNIV_BIN STREQUAL "NRNIV_BIN-NOTFOUND")
     message(STATUS "nrniv not found; will not automatically build NEURON validation data sets")
-    set(BUILD_NRN_VALIDATION_DATA FALSE)
+    set(NMC_BUILD_NRN_VALIDATION_DATA FALSE)
 else()
-    set(BUILD_NRN_VALIDATION_DATA TRUE)
+    set(NMC_BUILD_NRN_VALIDATION_DATA TRUE)
 endif()
 
-include_directories(${PROJECT_SOURCE_DIR}/tclap)
-include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PROJECT_SOURCE_DIR}/miniapp)
-include_directories(${PROJECT_SOURCE_DIR}/modcc)
-include_directories(${PROJECT_SOURCE_DIR})
-if( "${WITH_TBB}" STREQUAL "ON" )
-    include_directories(${TBB_INCLUDE_DIRS})
+#----------------------------------------------------------
+# Setup include dirs
+#----------------------------------------------------------
+include_directories(
+    "${PROJECT_SOURCE_DIR}/tclap"
+    "${PROJECT_SOURCE_DIR}/include"
+    "${PROJECT_SOURCE_DIR}/src"
+    "${PROJECT_SOURCE_DIR}/miniapp"
+    "${PROJECT_SOURCE_DIR}/modcc"
+    "${PROJECT_SOURCE_DIR}")
+if(EXTERNAL_INCLUDES)
+  include_directories("${EXTERNAL_INCLUDES}")
 endif()
 
+#----------------------------------------------------------
+# Setup subdirs
+#----------------------------------------------------------
 # only include validation data if flag is set
-if(BUILD_VALIDATION_DATA)
+if(NMC_BUILD_VALIDATION_DATA)
     add_subdirectory(validation)
 endif()
 

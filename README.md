@@ -58,7 +58,7 @@ The scripts set the `TBB_ROOT` environment variable, which is used by the CMake 
 
 ```
 source <path to TBB installation>/tbbvars.sh
-cmake <path to CMakeLists.txt> -DWITH_TBB=ON
+cmake <path to CMakeLists.txt> -DNMC_THREADING_MODEL=tbb
 ```
 
 ### TBB on Cray systems
@@ -82,10 +82,10 @@ export CXX=`which CC`
 export CC=`which cc`
 
 # multithreading only
-cmake <path to CMakeLists.txt> -DWITH_TBB=ON -DSYSTEM_CRAY=ON
+cmake <path to CMakeLists.txt> -DNMC_THREADING_MODEL=tbb -DSYSTEM_CRAY=ON
 
 # multithreading and MPI
-cmake <path to CMakeLists.txt> -DWITH_TBB=ON -DWITH_MPI=ON -DSYSTEM_CRAY=ON
+cmake <path to CMakeLists.txt> -DNMC_THREADING_MODEL=tbb -DWITH_MPI=ON -DSYSTEM_CRAY=ON
 ```
 
 ## targeting KNL
@@ -143,14 +143,14 @@ cd build_knl
 # run cmake with all the magic flags
 export CC=`which icc`
 export CXX=`which icpc`
-cmake <path to CMakeLists.txt> -DCMAKE_BUILD_TYPE=release -DWITH_TBB=ON -DWITH_PROFILING=ON -DVECTORIZE_TARGET=KNL -DUSE_OPTIMIZED_KERNELS=ON
+cmake <path to CMakeLists.txt> -DCMAKE_BUILD_TYPE=release -DNMC_THREADING_MODEL=tbb -DNMC_WITH_PROFILING=ON -DVECTORIZE_TARGET=KNL -DUSE_OPTIMIZED_KERNELS=ON
 make -j
 ```
 
 The flags passed into cmake are described:
   - `-DCMAKE_BUILD_TYPE=release` : build in release mode with `-O3`.
-  - `-WITH_TBB=ON` : use TBB for threading on multi-core
-  - `-DWITH_PROFILING=ON` : use internal profilers that print profiling report at end
+  - `-DNMC_THREADING_MODEL=tbb` : use TBB for threading on multi-core
+  - `-DNMC_WITH_PROFILING=ON` : use internal profilers that print profiling report at end
   - `-DVECTORIZE_TARGET=KNL` : generate AVX512 instructions, alternatively you can use:
     - `AVX2` for Haswell & Broadwell
     - `AVX` for Sandy Bridge and Ivy Bridge
