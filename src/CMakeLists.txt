@@ -21,6 +21,9 @@ if(NMC_WITH_MPI)
 endif()
 
 add_library(nestmc ${BASE_SOURCES} ${HEADERS})
+if(NMC_HAVE_HPX)
+  hpx_setup_target(nestmc)
+endif()
 
 if (NMC_AUTO_RUN_MODCC_ON_CHANGES)
   add_dependencies(nestmc build_all_mods)

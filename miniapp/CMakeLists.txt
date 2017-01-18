@@ -11,12 +11,10 @@ set(MINIAPP_SOURCES_CUDA
     miniapp_recipes.cpp
 )
 
-if(NMC_WITH_CUDA)
-    cuda_add_executable(miniapp.exe ${MINIAPP_SOURCES_CUDA} ${HEADERS})
-    target_link_libraries(miniapp.exe LINK_PUBLIC gpu)
-else()
-    add_executable(miniapp.exe ${MINIAPP_SOURCES} ${HEADERS})
-endif()
+add_nmc_executable(miniapp.exe
+     SOURCES ${MINIAPP_SOURCES}
+     HEADERS ${HEADERS}
+     FOLDER "miniapp")
 
 target_link_libraries(miniapp.exe LINK_PUBLIC nestmc)
 target_link_libraries(miniapp.exe LINK_PUBLIC ${EXTERNAL_LIBRARIES})

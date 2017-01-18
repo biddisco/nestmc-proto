@@ -1,3 +1,8 @@
+#ifdef NMC_HAVE_HPX
+  #include <hpx/hpx.hpp>
+  #include <hpx/hpx_main.hpp>
+#endif
+//
 #include <cmath>
 #include <exception>
 #include <iostream>

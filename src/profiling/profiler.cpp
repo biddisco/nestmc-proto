@@ -9,7 +9,11 @@
 #include <profiling/profiler.hpp>
 #include <util/make_unique.hpp>
 #include <util/debug.hpp>
-
+//
+//#include "logging.hpp"
+//
+#define LOG_DEBUG_MSG(x)
+//
 namespace nest {
 namespace mc {
 namespace util {
@@ -188,6 +192,8 @@ region_type* region_type::subregion(const char* n) {
         subregions_[hsh] = util::make_unique<region_type>(n, this);
         return subregions_[hsh].get();
     }
+    // assert that there are no collisions for our hashing function
+    EXPECTS(!std::strcmp(n, s->second->name().c_str()));
     return s->second.get();
 }
 
@@ -238,12 +244,14 @@ profiler_node region_type::populate_performance_tree() const {
 // region_type
 /////////////////////////////////////////////////////////
 void profiler::enter(const char* name) {
+    LOG_DEBUG_MSG(hexpointer(this) << current_region()->name() << " Enter ");
     if (!is_activated()) return;
     current_region_ = current_region_->subregion(name);
     current_region_->start_time();
 }
 
 void profiler::leave() {
+    LOG_DEBUG_MSG(hexpointer(this) << current_region()->name() << " Leave ");
     if (!is_activated()) return;
     if (current_region_->parent()==nullptr) {
         throw std::out_of_range("attempt to leave root memory tracing region");
@@ -261,6 +269,7 @@ void profiler::leave(int n) {
 }
 
 void profiler::start() {
+    LOG_DEBUG_MSG(hexpointer(this) << current_region()->name() << " Start ");
     gpu::start_nvprof();
     if (is_activated()) {
         throw std::out_of_range(
@@ -273,6 +282,7 @@ void profiler::start() {
 }
 
 void profiler::stop() {
+    LOG_DEBUG_MSG(hexpointer(this) << current_region()->name() << " Stop ");
     if (!is_in_root()) {
         throw std::out_of_range(
                 "profiler must be in root region when stopped"
@@ -285,6 +295,7 @@ void profiler::stop() {
 }
 
 void profiler::restart() {
+    LOG_DEBUG_MSG(hexpointer(this) << current_region()->name() << " Restart ");
     if (!is_activated()) {
         start();
         return;

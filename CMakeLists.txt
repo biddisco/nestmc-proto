@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 2.8)
 project(cell_algorithms)
 enable_language(CXX)
 
+# INTERFACE_LINK_LIBRARIES policy
+cmake_policy(SET CMP0022 NEW)
+
 # this generates a .json file with full compilation command for each file
 set(CMAKE_EXPORT_COMPILE_COMMANDS "YES")
 
@@ -66,8 +69,8 @@ set(EXTERNAL_INCLUDES "")
 # Threading model selection
 #----------------------------------------------------------
 set(NMC_THREADING_MODEL "serial" CACHE STRING
-    "set the threading model, one of serial/tbb/omp")
-set_property(CACHE NMC_THREADING_MODEL PROPERTY STRINGS serial tbb omp)
+    "set the threading model, one of serial/tbb/omp/hpx")
+set_property(CACHE NMC_THREADING_MODEL PROPERTY STRINGS serial tbb omp hpx)
 string(TOLOWER "${NMC_THREADING_MODEL}" NMC_THREADING_MODEL_LOWER )
 
 if(NMC_THREADING_MODEL_LOWER MATCHES "tbb")
@@ -86,11 +89,18 @@ elseif(NMC_THREADING_MODEL_LOWER MATCHES "omp")
     add_definitions(-DNMC_HAVE_OMP)
     set(NMC_HAVE_OMP TRUE)
 
+elseif(NMC_THREADING_MODEL_LOWER MATCHES "hpx")
+    # HPX support
+    find_package(HPX REQUIRED)
+    add_definitions(-DNMC_HAVE_HPX)
+    set(NMC_HAVE_HPX TRUE)
+
 elseif(NMC_THREADING_MODEL_LOWER MATCHES "serial")
     #setup previously done
 
 else()
-    message( FATAL_ERROR "-- Threading model '${NMC_THREADING_MODEL}' not supported, use one of serial/tbb/omp")
+    message( FATAL_ERROR "-- Threading model '${NMC_THREADING_MODEL}' not supported, "
+        "use one of serial/tbb/omp/hpx")
 
 endif()
 
