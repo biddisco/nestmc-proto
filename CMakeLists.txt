@@ -1,20 +1,35 @@
 cmake_minimum_required(VERSION 2.8)
 
-# project info
+#----------------------------------------------------------
+# Project setup
+#----------------------------------------------------------
 project(cell_algorithms)
 enable_language(CXX)
-
-# save incoming CXX flags for forwarding to modcc external project
-set(SAVED_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-
-# compilation flags
-set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-include("CompilerOptions")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXXOPT_DEBUG} ${CXXOPT_CXX11} ${CXXOPT_PTHREAD} ${CXXOPT_WALL}")
 
 # this generates a .json file with full compilation command for each file
 set(CMAKE_EXPORT_COMPILE_COMMANDS "YES")
 
+#----------------------------------------------------------
+# CMake module path and macros
+#----------------------------------------------------------
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+# flafs needed by nestmc
+include("CompilerOptions")
+# utility to setup includes/linking etc depending on options
+include("NMC_AddExecutable")
+
+#----------------------------------------------------------
+# Compiler flags
+#----------------------------------------------------------
+# save incoming CXX flags for forwarding to modcc external project
+set(SAVED_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+# compilation flags from CompilerOptions module
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXXOPT_DEBUG} ${CXXOPT_CXX11} ${CXXOPT_PTHREAD} ${CXXOPT_WALL}")
+
+#----------------------------------------------------------
+# Output paths
+#----------------------------------------------------------
 # generated .a and .so go into /lib
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -50,10 +65,12 @@ set(EXTERNAL_INCLUDES "")
 #----------------------------------------------------------
 # Threading model selection
 #----------------------------------------------------------
-set(NMC_THREADING_MODEL "serial" CACHE STRING "set the threading model, one of serial/tbb/omp")
+set(NMC_THREADING_MODEL "serial" CACHE STRING
+    "set the threading model, one of serial/tbb/omp")
 set_property(CACHE NMC_THREADING_MODEL PROPERTY STRINGS serial tbb omp)
+string(TOLOWER "${NMC_THREADING_MODEL}" NMC_THREADING_MODEL_LOWER )
 
-if(NMC_THREADING_MODEL MATCHES "tbb")
+if(NMC_THREADING_MODEL_LOWER MATCHES "tbb")
     # TBB support
     find_package(TBB REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TBB_DEFINITIONS}")
@@ -62,14 +79,14 @@ if(NMC_THREADING_MODEL MATCHES "tbb")
     list(APPEND EXTERNAL_LIBRARIES ${TBB_LIBRARIES})
     list(APPEND EXTERNAL_INCLUDES ${TBB_INCLUDE_DIRS})
 
-elseif(NMC_THREADING_MODEL MATCHES "omp")
+elseif(NMC_THREADING_MODEL_LOWER MATCHES "omp")
     # OpenMP support
     find_package(OpenMP REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     add_definitions(-DNMC_HAVE_OMP)
     set(NMC_HAVE_OMP TRUE)
 
-elseif(NMC_THREADING_MODEL MATCHES "serial")
+elseif(NMC_THREADING_MODEL_LOWER MATCHES "serial")
     #setup previously done
 
 else()
@@ -115,12 +132,13 @@ endif()
 #----------------------------------------------------------
 # Cray/BGQ/Generic Linux/other flag?
 #----------------------------------------------------------
-set(NMC_SYSTEM_TYPE "Generic" CACHE STRING 
+set(NMC_SYSTEM_TYPE "Generic" CACHE STRING
     "Choose a system type to customize flags")
 set_property(CACHE NMC_SYSTEM_TYPE PROPERTY STRINGS Generic Cray BGQ )
+string(TOLOWER "${NMC_SYSTEM_TYPE}" NMC_SYSTEM_TYPE_LOWER )
 
 # Cray specific flags
-if(${NMC_SYSTEM_TYPE} MATCHES "Cray")
+if(${NMC_SYSTEM_TYPE_LOWER} MATCHES "cray")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -dynamic")
 endif()
 
@@ -138,7 +156,7 @@ if(NMC_WITH_MPI)
     set_property(DIRECTORY APPEND_STRING PROPERTY COMPILE_OPTIONS "${MPI_C_COMPILE_FLAGS}")
 
     # BGQ specific flags
-   if(${NMC_SYSTEM_TYPE} MATCHES "BGQ" )
+   if(${NMC_SYSTEM_TYPE_LOWER} MATCHES "bgq" )
      add_definitions(-DMPICH2_CONST=const)
    endif()
 endif()
@@ -192,9 +210,7 @@ endif()
 set(NMC_VALIDATION_DATA_DIR "${PROJECT_SOURCE_DIR}/validation/data" CACHE PATH
   "location of generated validation data")
 
-#----------------------------------------------------------
 # Whether to build validation data at all
-#----------------------------------------------------------
 option(NMC_BUILD_VALIDATION_DATA "generate validation data" ON)
 
 # Whether to attempt to use julia to build validation data
@@ -247,4 +263,3 @@ add_subdirectory(mechanisms)
 add_subdirectory(src)
 add_subdirectory(tests)
 add_subdirectory(miniapp)
-
